@@ -136,6 +136,8 @@ The folder opens in a **new VS Code window**; once its agent boots, Telegram syn
 | `rokketWrapper.preferredLocation` | Where to open: `sidebar` or `panel` | `panel` |
 | `rokketWrapper.theme` | UI theme: `classic`, `phosphor`, `clarity`, `forge` | `forge` |
 | `rokketWrapper.useCtrlEnterToSend` | Use Ctrl/Cmd+Enter to send (Enter inserts newline) | `false` |
+| `rokketWrapper.workflowLivePanel` | Show a live inline card when a Claude Code workflow fans out sub-agents | `true` |
+| `rokketWrapper.workflowDiagnostics` | Show a diagnostics overlay for live workflow rendering (troubleshooting only) | `false` |
 | `rokketWrapper.autoUpdate` | Check for new versions automatically | `true` |
 | `rokketWrapper.githubToken` | GitHub token for update checks (or use `GH_TOKEN` env var) | `""` |
 | `rokketWrapper.telegramGroupId` | Telegram group chat ID (set automatically by setup wizard) | `0` |

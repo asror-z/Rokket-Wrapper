@@ -7,6 +7,11 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.1.23] — 2026-07-06
+
+### Changed
+- Claude model picker no longer relies on a hardcoded list. The extension now queries `https://api.anthropic.com/v1/models` using the OAuth token from `~/.claude/.credentials.json`, so new Claude models (Opus 4.8, Fable 5, Sonnet 5, etc.) appear in the picker as soon as they ship. Result is cached for 30 minutes per session, with a small bundled fallback list used only when the API can't be reached. Codex models already loaded dynamically from `~/.codex/models_cache.json` and continue to do so
+
 ## [0.1.22] — 2026-06-02
 
 ### Added
