@@ -89,12 +89,93 @@ interface SelectableModel {
   contextWindow: number;
 }
 
-const ANTHROPIC_MODELS: SelectableModel[] = [
-  { id: "claude-opus-4-7",          name: "Claude Opus 4.7",  provider: "Claude Code CLI", agentBackend: "claude-code", reasoning: true,  contextWindow: 1_000_000 },
-  { id: "claude-opus-4-6",          name: "Claude Opus 4.6",  provider: "Claude Code CLI", agentBackend: "claude-code", reasoning: true,  contextWindow: 1_000_000 },
-  { id: "claude-sonnet-4-6",        name: "Claude Sonnet 4.6",provider: "Claude Code CLI", agentBackend: "claude-code", reasoning: true,  contextWindow: 200_000   },
+// Bundled fallback: used only when the live Anthropic API query fails
+// (no credentials, offline, etc.). The live list is the source of truth.
+const CLAUDE_FALLBACK_MODELS: SelectableModel[] = [
+  { id: "claude-opus-4-8",          name: "Claude Opus 4.8",  provider: "Claude Code CLI", agentBackend: "claude-code", reasoning: true,  contextWindow: 1_000_000 },
+  { id: "claude-sonnet-5",          name: "Claude Sonnet 5",  provider: "Claude Code CLI", agentBackend: "claude-code", reasoning: true,  contextWindow: 1_000_000 },
+  { id: "claude-fable-5",           name: "Claude Fable 5",   provider: "Claude Code CLI", agentBackend: "claude-code", reasoning: true,  contextWindow: 1_000_000 },
   { id: "claude-haiku-4-5-20251001",name: "Claude Haiku 4.5", provider: "Claude Code CLI", agentBackend: "claude-code", reasoning: false, contextWindow: 200_000   },
 ];
+
+interface AnthropicApiModel {
+  id: string;
+  display_name?: string;
+  max_input_tokens?: number;
+  capabilities?: {
+    effort?: { supported?: boolean };
+    thinking?: { supported?: boolean };
+  };
+}
+
+interface ClaudeCredentials {
+  claudeAiOauth?: { accessToken?: string; expiresAt?: number };
+}
+
+const CLAUDE_MODELS_TTL_MS = 30 * 60 * 1000;
+const CLAUDE_MODELS_NEGATIVE_TTL_MS = 60 * 1000;
+const CLAUDE_MODELS_FETCH_TIMEOUT_MS = 5000;
+let claudeModelsCache: { at: number; models: SelectableModel[]; ttl: number } | null = null;
+
+async function readClaudeOauthToken(): Promise<string | null> {
+  try {
+    const raw = await fs.promises.readFile(path.join(os.homedir(), ".claude", ".credentials.json"), "utf-8");
+    const creds = JSON.parse(raw) as ClaudeCredentials;
+    const token = creds.claudeAiOauth?.accessToken;
+    return token || null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchClaudeModelsFromApi(token: string): Promise<SelectableModel[] | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CLAUDE_MODELS_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/models?limit=100", {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "oauth-2025-04-20",
+      },
+      signal: controller.signal,
+    });
+    if (!res.ok) return null;
+    const body = await res.json() as { data?: AnthropicApiModel[] };
+    if (!Array.isArray(body.data)) return null;
+    return body.data
+      .filter(m => typeof m.id === "string" && m.id.startsWith("claude-"))
+      .map(m => ({
+        id: m.id,
+        name: m.display_name || m.id,
+        provider: "Claude Code CLI" as const,
+        agentBackend: "claude-code" as const,
+        reasoning: Boolean(m.capabilities?.effort?.supported || m.capabilities?.thinking?.supported),
+        contextWindow: m.max_input_tokens ?? 200_000,
+      }));
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function loadClaudeCodeModels(): Promise<SelectableModel[]> {
+  const now = Date.now();
+  if (claudeModelsCache && now - claudeModelsCache.at < claudeModelsCache.ttl) {
+    return claudeModelsCache.models;
+  }
+  const token = await readClaudeOauthToken();
+  if (token) {
+    const live = await fetchClaudeModelsFromApi(token);
+    if (live && live.length > 0) {
+      claudeModelsCache = { at: now, models: live, ttl: CLAUDE_MODELS_TTL_MS };
+      return live;
+    }
+  }
+  claudeModelsCache = { at: now, models: CLAUDE_FALLBACK_MODELS, ttl: CLAUDE_MODELS_NEGATIVE_TTL_MS };
+  return CLAUDE_FALLBACK_MODELS;
+}
 
 interface CodexModelsCacheEntry {
   slug: string;
@@ -151,11 +232,14 @@ async function loadCodexModels(): Promise<SelectableModel[]> {
 }
 
 async function getSelectableModels(): Promise<SelectableModel[]> {
-  return [...ANTHROPIC_MODELS, ...(await loadCodexModels())];
+  const [claude, codex] = await Promise.all([loadClaudeCodeModels(), loadCodexModels()]);
+  return [...claude, ...codex];
 }
 
 function resolveModelInfo(id: string): SelectableModel {
-  const found = ANTHROPIC_MODELS.find(m => m.id === id);
+  const cached = claudeModelsCache?.models.find(m => m.id === id);
+  if (cached) return cached;
+  const found = CLAUDE_FALLBACK_MODELS.find(m => m.id === id);
   if (found) return found;
   // Fallback for unknown IDs
   const claudeMatch = id.toLowerCase().match(/^claude-(\w+)-(\d+)-(\d+)(?:-.*)?$/);
