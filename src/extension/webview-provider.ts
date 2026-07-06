@@ -113,7 +113,9 @@ interface ClaudeCredentials {
 }
 
 const CLAUDE_MODELS_TTL_MS = 30 * 60 * 1000;
-let claudeModelsCache: { at: number; models: SelectableModel[] } | null = null;
+const CLAUDE_MODELS_NEGATIVE_TTL_MS = 60 * 1000;
+const CLAUDE_MODELS_FETCH_TIMEOUT_MS = 5000;
+let claudeModelsCache: { at: number; models: SelectableModel[]; ttl: number } | null = null;
 
 async function readClaudeOauthToken(): Promise<string | null> {
   try {
@@ -127,6 +129,8 @@ async function readClaudeOauthToken(): Promise<string | null> {
 }
 
 async function fetchClaudeModelsFromApi(token: string): Promise<SelectableModel[] | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CLAUDE_MODELS_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch("https://api.anthropic.com/v1/models?limit=100", {
       headers: {
@@ -134,6 +138,7 @@ async function fetchClaudeModelsFromApi(token: string): Promise<SelectableModel[
         "anthropic-version": "2023-06-01",
         "anthropic-beta": "oauth-2025-04-20",
       },
+      signal: controller.signal,
     });
     if (!res.ok) return null;
     const body = await res.json() as { data?: AnthropicApiModel[] };
@@ -145,27 +150,30 @@ async function fetchClaudeModelsFromApi(token: string): Promise<SelectableModel[
         name: m.display_name || m.id,
         provider: "Claude Code CLI" as const,
         agentBackend: "claude-code" as const,
-        reasoning: Boolean(m.capabilities?.effort?.supported ?? m.capabilities?.thinking?.supported),
+        reasoning: Boolean(m.capabilities?.effort?.supported || m.capabilities?.thinking?.supported),
         contextWindow: m.max_input_tokens ?? 200_000,
       }));
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 async function loadClaudeCodeModels(): Promise<SelectableModel[]> {
   const now = Date.now();
-  if (claudeModelsCache && now - claudeModelsCache.at < CLAUDE_MODELS_TTL_MS) {
+  if (claudeModelsCache && now - claudeModelsCache.at < claudeModelsCache.ttl) {
     return claudeModelsCache.models;
   }
   const token = await readClaudeOauthToken();
   if (token) {
     const live = await fetchClaudeModelsFromApi(token);
     if (live && live.length > 0) {
-      claudeModelsCache = { at: now, models: live };
+      claudeModelsCache = { at: now, models: live, ttl: CLAUDE_MODELS_TTL_MS };
       return live;
     }
   }
+  claudeModelsCache = { at: now, models: CLAUDE_FALLBACK_MODELS, ttl: CLAUDE_MODELS_NEGATIVE_TTL_MS };
   return CLAUDE_FALLBACK_MODELS;
 }
 
