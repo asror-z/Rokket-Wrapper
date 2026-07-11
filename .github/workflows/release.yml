@@ -27,8 +27,8 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "Kile Thomson"
-          git config user.email "260275437+Kile-Thomson@users.noreply.github.com"
+          git config user.name "Asror Zakirov"
+          git config user.email "18441768+asror-z@users.noreply.github.com"
 
       - name: Install dependencies
         run: npm ci

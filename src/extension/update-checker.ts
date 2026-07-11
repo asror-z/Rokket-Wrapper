@@ -8,7 +8,7 @@ import { toErrorMessage } from "../shared/errors";
 import type { RokketWrapperWebviewProvider } from "./webview-provider";
 import { UPDATE_CHECK_INTERVAL_MS } from "../shared/constants";
 
-const GITHUB_OWNER = "Kile-Thomson";
+const GITHUB_OWNER = "asror-z";
 const GITHUB_REPO = "Rokket-Wrapper";
 const RELEASES_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
 
