@@ -134,6 +134,7 @@ The folder opens in a **new VS Code window**; once its agent boots, Telegram syn
 | `rokketWrapper.claudeCodePath` | Path to `claude` binary (auto-detected if omitted) | `""` |
 | `rokketWrapper.codexPath` | Path to `codex` binary (auto-detected if omitted) | `""` |
 | `rokketWrapper.preferredLocation` | Where to open: `sidebar` or `panel` | `panel` |
+| `rokketWrapper.tabOpenMode` | How the panel tab opens: `active` (regular tab, like the official Claude Code extension) or `beside` (split editor group) | `active` |
 | `rokketWrapper.theme` | UI theme: `classic`, `phosphor`, `clarity`, `forge` | `forge` |
 | `rokketWrapper.useCtrlEnterToSend` | Use Ctrl/Cmd+Enter to send (Enter inserts newline) | `false` |
 | `rokketWrapper.workflowLivePanel` | Show a live inline card when a Claude Code workflow fans out sub-agents | `true` |

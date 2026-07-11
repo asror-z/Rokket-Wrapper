@@ -111,6 +111,19 @@
 					"default": "panel",
 					"description": "Where RokketWrapper opens by default."
 				},
+				"rokketWrapper.tabOpenMode": {
+					"type": "string",
+					"enum": [
+						"active",
+						"beside"
+					],
+					"enumDescriptions": [
+						"Open as a regular tab in the current editor group (like the official Claude Code extension)",
+						"Open in a new split editor group beside the current one"
+					],
+					"default": "active",
+					"description": "How the RokketWrapper tab opens when using \"Panel (New Tab)\" mode."
+				},
 				"rokketWrapper.theme": {
 					"type": "string",
 					"enum": [

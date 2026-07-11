@@ -706,8 +706,12 @@ export class RokketWrapperWebviewProvider implements vscode.WebviewViewProvider 
 
   openInTab(): void {
     const sessionId = `panel-${++this.sessionCounter}`;
+    const tabOpenMode = vscode.workspace
+      .getConfiguration("rokketWrapper")
+      .get<string>("tabOpenMode", "active");
+    const targetColumn = tabOpenMode === "beside" ? vscode.ViewColumn.Beside : vscode.ViewColumn.Active;
     const panel = vscode.window.createWebviewPanel(
-      "rokketWrapperPanel", "RokketWrapper", vscode.ViewColumn.Beside,
+      "rokketWrapperPanel", "RokketWrapper", targetColumn,
       {
         enableScripts: true,
         retainContextWhenHidden: true,
