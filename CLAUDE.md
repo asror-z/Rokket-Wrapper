@@ -1,5 +1,14 @@
 # Project Requirements — RokketWrapper
 
+## Governing Program-Type Skill
+
+This is a **VS Code extension** — `smarts-app-vscode` owns all debug/F5/launch,
+Extension Development Host lifecycle, packaging (`.vsix`), and install-state
+diagnosis for this project; invoke it for any such issue rather than diagnosing
+`launch.json`/`storage.json`/packaging ad hoc. See `module/host-lifecycle.md` for
+the Extension Development Host / F5-vs-install / reload / `deactivate()` facts,
+and `module/diagnosing-launch-state.md` for the F5-folder-mismatch fix menu.
+
 ## What This Is
 
 A VS Code extension (`rokketek-wrapper`) that wraps the Claude Code CLI and OpenAI Codex
