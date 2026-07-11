@@ -56,6 +56,16 @@ Model" section. There is currently no settings-gated escape hatch to run without
 flags; see `roadma/Rokket Wrapper Roadmap 2.md` (local, gitignored) for the open decision
 on whether to add one.
 
+## Panel Tab Open Mode
+
+`openInTab()` in `webview-provider.ts` reads `rokketWrapper.tabOpenMode` to pick the
+`vscode.ViewColumn` it opens the RokketWrapper webview panel in — `"active"` (default)
+opens it as a regular tab in the current editor group, matching the official Claude Code
+extension's own behavior; `"beside"` restores the original split-editor-group behavior.
+When adding any other "open a panel/tab" entry point, read this same setting rather than
+hardcoding a `ViewColumn` — the point of the setting is that every panel-opening path
+respects the user's choice consistently.
+
 ## Professionalization Roadmap
 
 A `roadma/` folder (gitignored, per `smarts-improve-roadmap`'s convention) holds
